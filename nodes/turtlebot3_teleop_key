@@ -100,6 +100,23 @@ def checkAngularLimitVelocity(vel):
 
     return vel
 
+def set_volocity(pub):
+    global target_linear_vel, target_angular_vel, control_linear_vel, control_angular_vel
+    # print(target_linear_vel, target_angular_vel, control_linear_vel, control_angular_vel)
+    twist = Twist()
+
+    control_linear_vel = makeSimpleProfile(control_linear_vel, target_linear_vel, (LIN_VEL_STEP_SIZE / 2.0))
+    twist.linear.x = control_linear_vel
+    twist.linear.y = 0.0
+    twist.linear.z = 0.0
+
+    control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE / 2.0))
+    twist.angular.x = 0.0
+    twist.angular.y = 0.0
+    twist.angular.z = control_angular_vel
+
+    pub.publish(twist)
+
 if __name__=="__main__":
     if os.name != 'nt':
         settings = termios.tcgetattr(sys.stdin)
@@ -109,6 +126,7 @@ if __name__=="__main__":
 
     turtlebot3_model = rospy.get_param("model", "burger")
 
+    global target_linear_vel, target_angular_vel, control_linear_vel, control_angular_vel, distance_travelled
     status = 0
     target_linear_vel   = 0.0
     target_angular_vel  = 0.0
@@ -118,6 +136,7 @@ if __name__=="__main__":
     try:
         print(msg)
         while(1):
+            # is this not a blocking call?
             key = getKey()
             if key == 'w' :
                 target_linear_vel = checkLinearLimitVelocity(target_linear_vel + LIN_VEL_STEP_SIZE)
@@ -142,6 +161,7 @@ if __name__=="__main__":
                 control_angular_vel = 0.0
                 print(vels(target_linear_vel, target_angular_vel))
             else:
+                print("got nothing")
                 if (key == '\x03'):
                     break
 
@@ -149,15 +169,16 @@ if __name__=="__main__":
                 print(msg)
                 status = 0
 
-            twist = Twist()
-
-            control_linear_vel = makeSimpleProfile(control_linear_vel, target_linear_vel, (LIN_VEL_STEP_SIZE/2.0))
-            twist.linear.x = control_linear_vel; twist.linear.y = 0.0; twist.linear.z = 0.0
-
-            control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE/2.0))
-            twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
-
-            pub.publish(twist)
+            set_volocity(pub)
+            # twist = Twist()
+            #
+            # control_linear_vel = makeSimpleProfile(control_linear_vel, target_linear_vel, (LIN_VEL_STEP_SIZE/2.0))
+            # twist.linear.x = control_linear_vel; twist.linear.y = 0.0; twist.linear.z = 0.0
+            #
+            # control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE/2.0))
+            # twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
+            #
+            # pub.publish(twist)
 
     except:
         print(e)
