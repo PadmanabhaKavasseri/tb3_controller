@@ -16,5 +16,6 @@
   <url type="bugtracker">https://github.com/ROBOTIS-GIT/turtlebot3/issues</url>
   <buildtool_depend>catkin</buildtool_depend>
   <depend>rospy</depend>
+  <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
 </package>

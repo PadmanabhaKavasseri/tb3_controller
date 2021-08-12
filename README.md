@@ -12,7 +12,7 @@ source ~/.bashrc && . /root/catkin_ws/devel/setup.bash
 ifconfig
 ```
 ```shell
-export ROS_MASTER_URI='http://192.168.0.123:11311'
+export ROS_MASTER_URI='http://192.168.0.142:11311'
 ```
 
 **First Terminal**  
@@ -41,7 +41,26 @@ export TURTLEBOT3_MODEL=waffle_pi
 roslaunch tb3_controller tb3_controller.launch
 ```
 
-TODO add SSH information
+____________________________________________________________________
+## **SSH Instructions**
+```shell
+ssh root@192.168.0.123
+```
+*Password*
+```shell
+oelinux123
+```
+**First Terminal** 
+```shell
+export OPENCR_MODEL=waffle_pi
+roslaunch turtlebot3_bringup turtlebot3_robot.launch
+```
+**Second Terminal** 
+```shell
+export OPENCR_MODEL=waffle_pi
+export TURTLEBOT3_MODEL=waffle_pi
+roslaunch tb3_controller tb3_controller.launch
+```
 
 ____________________________________________________________________
 ## **ADB Cheat sheet**

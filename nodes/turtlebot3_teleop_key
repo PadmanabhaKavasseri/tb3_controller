@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
-
 import rospy
+import time
+import threading
 from geometry_msgs.msg import Twist
 import sys, select, os
-
+from std_msgs.msg import String
 
 if os.name == 'nt':
   import msvcrt
 else:
   import tty, termios
+
+
 
 BURGER_MAX_LIN_VEL = 0.22
 BURGER_MAX_ANG_VEL = 2.84
@@ -19,6 +22,12 @@ WAFFLE_MAX_ANG_VEL = 1.82
 
 LIN_VEL_STEP_SIZE = 0.01
 ANG_VEL_STEP_SIZE = 0.1
+
+reverse = False
+wait = False
+cv = threading.Condition()
+
+
 
 msg = """
 Control Your TurtleBot3 mr.user!
@@ -117,68 +126,162 @@ def set_volocity(pub):
 
     pub.publish(twist)
 
+def OM_State_Callback(data):
+    global wait, cv
+    if int(data.data) == 1:
+        wait = False
+        cv.notifyAll()
+    
+    rospy.loginfo(data.data)
+
+def drive(pub, tb3_state):
+    forward(pub)
+    stop(pub)
+    print("Calling talker")
+    talker(tb3_state)
+    global wait, cv
+    wait = True
+
+    while wait is True:
+        with cv:
+            print("Waiting for arm to grab object")
+            cv.wait()
+
+    # who sets wait to false... callback funciton
+
+    reverse(pub)
+    stop(pub)
+    print("Completed")
+
+
+
+def forward(pub):
+    global target_linear_vel
+    target_linear_vel = 0.2
+    for i in range(100):
+        set_volocity(pub)
+        time.sleep(0.1)
+    print("Finished Going Foward")
+
+def reverse(pub):
+    global target_linear_vel
+    target_linear_vel = -0.2
+    for i in range(100):
+        set_volocity(pub)
+        time.sleep(0.1)
+    print("Finished Going Backward")
+
+def stop(pub):
+    twist = Twist()
+    twist.linear.x = 0.0
+    twist.linear.y = 0.0
+    twist.linear.z = 0.0
+    twist.angular.x = 0.0
+    twist.angular.y = 0.0
+    twist.angular.z = 0.0
+    pub.publish(twist)
+
+
+def telop(pub):
+    status = 0
+    print(msg)
+    global target_linear_vel, target_angular_vel, control_linear_vel, control_angular_vel
+    while (1):
+        # is this not a blocking call?
+        key = getKey()
+        if key == 'w':
+            target_linear_vel = checkLinearLimitVelocity(target_linear_vel + LIN_VEL_STEP_SIZE)
+            status = status + 1
+            print(vels(target_linear_vel, target_angular_vel))
+        elif key == 'x':
+            target_linear_vel = checkLinearLimitVelocity(target_linear_vel - LIN_VEL_STEP_SIZE)
+            status = status + 1
+            print(vels(target_linear_vel, target_angular_vel))
+        elif key == 'a':
+            target_angular_vel = checkAngularLimitVelocity(target_angular_vel + ANG_VEL_STEP_SIZE)
+            status = status + 1
+            print(vels(target_linear_vel, target_angular_vel))
+        elif key == 'd':
+            target_angular_vel = checkAngularLimitVelocity(target_angular_vel - ANG_VEL_STEP_SIZE)
+            status = status + 1
+            print(vels(target_linear_vel, target_angular_vel))
+        elif key == ' ' or key == 's':
+            target_linear_vel = 0.0
+            control_linear_vel = 0.0
+            target_angular_vel = 0.0
+            control_angular_vel = 0.0
+            print(vels(target_linear_vel, target_angular_vel))
+        else:
+            print("got nothing")
+            if (key == '\x03'):
+                break
+
+        if status == 20:
+            print(msg)
+            status = 0
+
+        set_volocity(pub)
+
+
+        # twist = Twist()
+        #
+        # control_linear_vel = makeSimpleProfile(control_linear_vel, target_linear_vel, (LIN_VEL_STEP_SIZE/2.0))
+        # twist.linear.x = control_linear_vel; twist.linear.y = 0.0; twist.linear.z = 0.0
+        #
+        # control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE/2.0))
+        # twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
+        #
+        # pub.publish(twist)
+
+
+def talker(tb3_state):
+    tb3_state.publish("1")
+
+    # while 1:
+    #     tb3_state.publish("Finished")
+    #     time.sleep(1)
+
+    # print("Sent Message")
+
+
+
 if __name__=="__main__":
     if os.name != 'nt':
         settings = termios.tcgetattr(sys.stdin)
 
     rospy.init_node('turtlebot3_teleop')
     pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+    tb3_state = rospy.Publisher('TB3_State', String, queue_size=10)
+    # om_state = rospy.Subscriber('my_topic', String, OM_State_Callback)
+    # rospy.spin()
 
     turtlebot3_model = rospy.get_param("model", "burger")
 
     global target_linear_vel, target_angular_vel, control_linear_vel, control_angular_vel, distance_travelled
-    status = 0
     target_linear_vel   = 0.0
     target_angular_vel  = 0.0
     control_linear_vel  = 0.0
     control_angular_vel = 0.0
 
     try:
-        print(msg)
-        while(1):
-            # is this not a blocking call?
-            key = getKey()
-            if key == 'w' :
-                target_linear_vel = checkLinearLimitVelocity(target_linear_vel + LIN_VEL_STEP_SIZE)
-                status = status + 1
-                print(vels(target_linear_vel,target_angular_vel))
-            elif key == 'x' :
-                target_linear_vel = checkLinearLimitVelocity(target_linear_vel - LIN_VEL_STEP_SIZE)
-                status = status + 1
-                print(vels(target_linear_vel,target_angular_vel))
-            elif key == 'a' :
-                target_angular_vel = checkAngularLimitVelocity(target_angular_vel + ANG_VEL_STEP_SIZE)
-                status = status + 1
-                print(vels(target_linear_vel,target_angular_vel))
-            elif key == 'd' :
-                target_angular_vel = checkAngularLimitVelocity(target_angular_vel - ANG_VEL_STEP_SIZE)
-                status = status + 1
-                print(vels(target_linear_vel,target_angular_vel))
-            elif key == ' ' or key == 's' :
-                target_linear_vel   = 0.0
-                control_linear_vel  = 0.0
-                target_angular_vel  = 0.0
-                control_angular_vel = 0.0
-                print(vels(target_linear_vel, target_angular_vel))
-            else:
-                print("got nothing")
-                if (key == '\x03'):
-                    break
+        driver = threading.Thread(target=drive,args=(pub,tb3_state))
+        driver.start()
+        driver.join()
 
-            if status == 20 :
-                print(msg)
-                status = 0
 
-            set_volocity(pub)
-            # twist = Twist()
-            #
-            # control_linear_vel = makeSimpleProfile(control_linear_vel, target_linear_vel, (LIN_VEL_STEP_SIZE/2.0))
-            # twist.linear.x = control_linear_vel; twist.linear.y = 0.0; twist.linear.z = 0.0
-            #
-            # control_angular_vel = makeSimpleProfile(control_angular_vel, target_angular_vel, (ANG_VEL_STEP_SIZE/2.0))
-            # twist.angular.x = 0.0; twist.angular.y = 0.0; twist.angular.z = control_angular_vel
-            #
-            # pub.publish(twist)
+        # drive(pub, tb3_state)
+        # rospy.spin()
+
+        # rospy.spinOnce()
+        # while not rospy.is_shutdown():
+        #     rospy.spinOnce()
+        # tb3_driver = threading.Thread(target=driver(), args=(pub, tb3_state))
+        # tb3_driver.start()
+        # tb3_driver.join()
+
+        # tb3_process thread
+        # forward_and_stop(pub)
+        # telop(pub)
 
     except:
         print(e)
