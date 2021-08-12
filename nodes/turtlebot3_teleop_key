@@ -127,12 +127,14 @@ def set_volocity(pub):
     pub.publish(twist)
 
 def OM_State_Callback(data):
+    rospy.loginfo(data.data)
     global wait, cv
     if int(data.data) == 1:
-        wait = False
-        cv.notifyAll()
+        with cv:
+            wait = False
+            cv.notifyAll()
 
-    rospy.loginfo(data.data)
+
 
 def drive(pub, tb3_state):
     forward(pub)
@@ -252,7 +254,7 @@ if __name__=="__main__":
     rospy.init_node('turtlebot3_teleop')
     pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
     tb3_state = rospy.Publisher('TB3_State', String, queue_size=10)
-    # om_state = rospy.Subscriber('my_topic', String, OM_State_Callback)
+    om_state = rospy.Subscriber('OM_State', String, OM_State_Callback)
     # rospy.spin()
 
     turtlebot3_model = rospy.get_param("model", "burger")
