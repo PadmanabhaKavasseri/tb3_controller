@@ -137,7 +137,8 @@ def OM_State_Callback(data):
 
 
 def drive(pub, tb3_state):
-    forward(pub)
+    reverse(pub)
+    slow(pub)
     stop(pub)
     print("Calling talker")
     talker(tb3_state)
@@ -153,7 +154,8 @@ def drive(pub, tb3_state):
 
     # who sets wait to false... callback funciton
 
-    reverse(pub)
+    forward(pub)
+    slow(pub)
     stop(pub)
     print("Completed")
 
@@ -174,6 +176,14 @@ def reverse(pub):
         set_volocity(pub)
         time.sleep(0.1)
     print("Finished Going Backward")
+
+def slow(pub):
+    global target_linear_vel
+    target_linear_vel = 0.0
+    for i in range(25):
+        set_volocity(pub)
+        time.sleep(0.1)
+    print("Print slowing to a stop")
 
 def stop(pub):
     twist = Twist()

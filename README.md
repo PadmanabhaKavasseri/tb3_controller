@@ -12,7 +12,7 @@ source ~/.bashrc && . /root/catkin_ws/devel/setup.bash
 ifconfig
 ```
 ```shell
-export ROS_MASTER_URI='http://192.168.0.187:11311'
+export ROS_MASTER_URI='http://192.168.0.189:11311'
 ```
 
 **First Terminal**  
@@ -43,6 +43,8 @@ roslaunch tb3_controller tb3_controller.launch
 **Optional Terminal**  
 *Turtlebot3 Keyboard Teleop Controller Controller*
 ```shell
+export OPENCR_MODEL=waffle_pi
+export TURTLEBOT3_MODEL=waffle_pi
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 ```
 
