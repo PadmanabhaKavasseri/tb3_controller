@@ -137,34 +137,64 @@ def OM_State_Callback(data):
 
 
 def drive(pub, tb3_state):
+    print("Reversing")
     reverse(pub)
+    print("Slowing")
     slow(pub)
+    print("Stopping")
     stop(pub)
+
     print("Calling talker")
     talker(tb3_state)
+    # time.sleep(1)
     global wait, cv
-    # wait = True CHANGE FOR REAL USE!!!!!!
-    wait = False
-
+    wait = True  # CHANGE FOR REAL USE!!!!!!
+    # wait = False
+    # who sets wait to false... callback funciton
 
     while wait is True:
         with cv:
             print("Waiting for arm to grab object")
             cv.wait()
 
-    # who sets wait to false... callback funciton
-
+    # back up a little
+    print("Forwarding")
     forward(pub)
+    print("Slowing")
+    slow(pub)
+    print("Stopping")
+    stop(pub)
+
+    # spin
+    slow(pub)
+    print("Turning Left 180")
+    spinleft(pub)
     slow(pub)
     stop(pub)
+
+
+    print("Reversing")
+    reverse(pub)
+    print("Slowing")
+    slow(pub)
+    print("Stopping")
+    stop(pub)
     print("Completed")
+
+def spinleft(pub):
+    global target_angular_vel
+    target_angular_vel = 0.2
+    for i in range(153):
+        set_volocity(pub)
+        time.sleep(0.1)
+    print("Finished Spinning")
 
 
 
 def forward(pub):
     global target_linear_vel
-    target_linear_vel = 0.2
-    for i in range(100):
+    target_linear_vel = 0.1
+    for i in range(20):
         set_volocity(pub)
         time.sleep(0.1)
     print("Finished Going Foward")
@@ -172,18 +202,19 @@ def forward(pub):
 def reverse(pub):
     global target_linear_vel
     target_linear_vel = -0.2
-    for i in range(100):
+    for i in range(105):
         set_volocity(pub)
         time.sleep(0.1)
     print("Finished Going Backward")
 
 def slow(pub):
-    global target_linear_vel
+    global target_linear_vel, target_angular_vel
     target_linear_vel = 0.0
-    for i in range(25):
+    target_angular_vel = 0.0
+    for i in range(40):
         set_volocity(pub)
         time.sleep(0.1)
-    print("Print slowing to a stop")
+    print("Finished slowing to a stop")
 
 def stop(pub):
     twist = Twist()

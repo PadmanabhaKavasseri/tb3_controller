@@ -12,7 +12,7 @@ source ~/.bashrc && . /root/catkin_ws/devel/setup.bash
 ifconfig
 ```
 ```shell
-export ROS_MASTER_URI='http://192.168.0.189:11311'
+export ROS_MASTER_URI='http://192.168.0.181:11311'
 ```
 
 **First Terminal**  
